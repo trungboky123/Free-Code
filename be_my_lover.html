@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Be My Lover?</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
+
+    :root {
+      /* 👉 Đổi link ảnh nền trái tim của bạn ở đây */
+      --bg-image: url('https://images.unsplash.com/photo-1518199266791-5375a83190b7?q=80&w=1200&auto=format&fit=crop');
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+    }
+
+    body {
+      font-family: "Alex Brush", cursive;
+    }
+
+    .wrapper {
+      width: 100%;
+      height: 100vh;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      background-image: var(--bg-image);
+      background-size: cover;
+      background-position: center;
+      text-align: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 3rem;
+      background: linear-gradient(90deg, #8e2de2, #ff6fb5);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+    }
+
+    .buttons {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+
+    button {
+      font-family: "Alex Brush", cursive;
+      font-size: 1.5rem;
+      padding: 10px 32px;
+      border-radius: 30px;
+      border: none;
+      cursor: pointer;
+      background: #ff6fb5;
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, .25);
+      transition: transform .2s ease, background .2s ease, top .5s cubic-bezier(.34, 1.56, .64, 1), left .5s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    button:hover {
+      background: #ff4fa0;
+      transform: scale(1.08);
+    }
+
+    .wrapper>h1,
+    .wrapper>.buttons {
+      transition: opacity .4s ease, transform .4s ease;
+    }
+
+    .wrapper.revealed>h1,
+    .wrapper.revealed>.buttons {
+      opacity: 0;
+      transform: scale(.9);
+      pointer-events: none;
+    }
+
+    .love-msg {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      margin: 0;
+      width: 90%;
+      font-size: 5rem;
+      font-weight: 700;
+      color: #ff4fa0;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .15);
+      opacity: 0;
+      transform: translate(-50%, -40%) scale(.85);
+      pointer-events: none;
+      transition: opacity .5s cubic-bezier(.34, 1.56, .64, 1), transform .5s cubic-bezier(.34, 1.56, .64, 1);
+    }
+
+    .love-msg.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .msg-heart {
+      display: inline-block;
+      animation: heartBeat 1s ease-in-out infinite;
+    }
+
+    .hearts {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .heart {
+      position: absolute;
+      bottom: -40px;
+      color: #e0455a;
+      opacity: .85;
+      animation: floatUp linear infinite;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, .25));
+    }
+
+    @keyframes floatUp {
+      0% {
+        transform: translateY(0) translateX(0) rotate(0deg);
+        opacity: 0;
+      }
+
+      10% {
+        opacity: .9;
+      }
+
+      90% {
+        opacity: .7;
+      }
+
+      100% {
+        transform: translateY(-115vh) translateX(var(--drift, 20px)) rotate(25deg);
+        opacity: 0;
+      }
+    }
+
+    @keyframes heartBeat {
+
+      0%,
+      100% {
+        transform: scale(1);
+      }
+
+      25% {
+        transform: scale(1.3);
+      }
+
+      50% {
+        transform: scale(1);
+      }
+
+      75% {
+        transform: scale(1.2);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrapper">
+    <div class="hearts" id="hearts"></div>
+
+    <h1>Làm vợ anh nhé?</h1>
+
+    <div class="buttons">
+      <button id="yesBtn">Dạaa</button>
+      <button id="noBtn">Không!</button>
+    </div>
+
+    <p id="loveMsg" class="love-msg">Anh iu vợ nhìu lắmmmmmm:3 <span class="msg-heart">❤️</span></p>
+
+    <!-- vùng chứa nhạc, ẩn khỏi mắt người xem nhưng vẫn phát được -->
+    <div id="ytAudio" style="position:fixed; left:-9999px; width:1px; height:1px; overflow:hidden;"></div>
+  </div>
+
+  <script>
+    const noBtn = document.getElementById('noBtn');
+    const yesBtn = document.getElementById('yesBtn');
+    let hoverCount = 0;
+    let originalPos = null;
+
+    function handleNoHover(btn) {
+      // chỉ chạy logic nếu nút đang hover hiện đang hiển thị chữ "Không!"
+      if (btn.textContent.trim() !== 'Không!') return;
+
+      hoverCount++;
+
+      if (hoverCount <= 6) {
+        const btnWidth = btn.offsetWidth;
+        const btnHeight = btn.offsetHeight;
+        const margin = 16;
+        const maxX = window.innerWidth - btnWidth - margin;
+        const maxY = window.innerHeight - btnHeight - margin;
+        const randX = margin + Math.random() * (maxX - margin);
+        const randY = margin + Math.random() * (maxY - margin);
+
+        if (btn.style.position !== 'fixed') {
+          // "đóng băng" vị trí hiện tại trước (không nhảy giật), rồi mới animate tới vị trí mới
+          const rect = btn.getBoundingClientRect();
+          if (!originalPos) {
+            originalPos = { left: rect.left, top: rect.top };
+          }
+          btn.style.position = 'fixed';
+          btn.style.margin = '0';
+          btn.style.left = rect.left + 'px';
+          btn.style.top = rect.top + 'px';
+          btn.offsetHeight; // ép trình duyệt tính lại layout (reflow)
+        }
+
+        requestAnimationFrame(() => {
+          btn.style.left = randX + 'px';
+          btn.style.top = randY + 'px';
+        });
+      } else if (hoverCount === 7) {
+        // lần thứ 7: animate trở về đúng vị trí ban đầu, rồi mới trả lại vào layout bình thường
+        if (originalPos) {
+          btn.style.left = originalPos.left + 'px';
+          btn.style.top = originalPos.top + 'px';
+        }
+        setTimeout(() => {
+          btn.style.position = '';
+          btn.style.left = '';
+          btn.style.top = '';
+          btn.style.margin = '';
+        }, 520);
+      } else {
+        // từ lần thứ 8 trở đi: đổi chữ 2 nút cho nhau (bất kể đang hover nút nào trong 2 nút)
+        const temp = yesBtn.textContent;
+        yesBtn.textContent = noBtn.textContent;
+        noBtn.textContent = temp;
+      }
+    }
+
+    yesBtn.addEventListener('mouseenter', () => handleNoHover(yesBtn));
+    noBtn.addEventListener('mouseenter', () => handleNoHover(noBtn));
+
+    const loveMsg = document.getElementById('loveMsg');
+    const wrapper = document.querySelector('.wrapper');
+    const heartsContainer = document.getElementById('hearts');
+    const HEART_COUNT = 18;
+    let heartsSpawned = false;
+
+    function spawnHearts() {
+      if (heartsSpawned) return; // tránh bấm nhiều lần bị chồng tim
+      heartsSpawned = true;
+      for (let i = 0; i < HEART_COUNT; i++) {
+        const h = document.createElement('div');
+        h.className = 'heart';
+        h.textContent = '❤';
+        const size = 14 + Math.random() * 22;
+        h.style.left = Math.random() * 100 + '%';
+        h.style.fontSize = size + 'px';
+        h.style.animationDuration = (7 + Math.random() * 8) + 's';
+        h.style.animationDelay = (Math.random() * 2) + 's';
+        h.style.setProperty('--drift', (Math.random() * 80 - 40) + 'px');
+        heartsContainer.appendChild(h);
+      }
+    }
+
+    const bgMusicContainer = document.getElementById('ytAudio');
+
+    yesBtn.addEventListener('click', () => {
+      wrapper.classList.add('revealed');
+      loveMsg.classList.add('show');
+      spawnHearts();
+
+      // nhúng MV chính thức "Ngày Đầu Tiên - Đức Phúc" và tự phát
+      // (chèn ngay trong lúc xử lý sự kiện click để trình duyệt cho phép autoplay có tiếng)
+      if (!bgMusicContainer.hasChildNodes()) {
+        const iframe = document.createElement('iframe');
+        iframe.width = '200';
+        iframe.height = '200';
+        iframe.src = 'https://www.youtube.com/embed/AfNbehFKJ7o?si=QssKpkGNgV6BJFJ1&autoplay=1&loop=1&playlist=AfNbehFKJ7o';
+        iframe.frameBorder = '0';
+        iframe.allow = 'autoplay; encrypted-media';
+        iframe.allowFullscreen = true;
+        bgMusicContainer.appendChild(iframe);
+      }
+    });
+  </script>
+</body>
+
+</html>
